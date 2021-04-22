@@ -28,8 +28,10 @@ namespace
 using namespace std;
 
 #define int long long
-#define belongcell(belongcell__x) (belongcell__x/1000)
+#define belongcell(belongcell__x) ((int)(belongcell__x/1000))
 #define d_belongcell(belongcell__x) ((int)(belongcell__x/1000.00))
+#define abs(abs__x) (((abs__x)>0)?(abs__x):(-abs__x))
+
 const int start_time = 1618993950538ll;
 
 inline int getTime() {
@@ -51,6 +53,7 @@ struct enemy_returning_node {
 		return y<u.y;
 	}
 };
+queue<shared_ptr<const THUAI4::Wall>> walls_info;
 class Massage_Node {
 public:
 	string str;
@@ -61,11 +64,10 @@ private:
 	void update_myinfo(shared_ptr<const THUAI4::Character> myinfo) ;
 	void update_enemies(vector<shared_ptr<const THUAI4::Character>> *enemies, shared_ptr<const THUAI4::Character> myinfo) ;
 	void update_time() ;
-	void update_walls(queue<const THUAI4::Wall> *walls_info) ;
+	void update_walls() ;
 public:
-	void Massage_Node:: update_all(shared_ptr<const THUAI4::Character> myinfo
-	,vector<shared_ptr<const THUAI4::Character>> *enemies,
-	queue<const THUAI4::Wall> *walls_info)  ; //更新出通讯代码！
+	void update_all(shared_ptr<const THUAI4::Character> myinfo
+	,vector<shared_ptr<const THUAI4::Character>> *enemies)  ; //更新出通讯代码！
 	Massage_Node () {
 		str.clear();
 	}
@@ -134,21 +136,20 @@ void Massage_Node:: update_time() {
 	//43~45
 	base_write(43,3,getTime());
 }
-void Massage_Node:: update_walls(queue<const THUAI4::Wall> *walls_info) {
+void Massage_Node:: update_walls() {
 	//46~53
-	for(int i=0;i<4 && (!walls_info->empty());i++) {
-		base_write(46+i*2,1,belongcell(walls_info->front().x));
-		base_write(47+i*2,1,belongcell(walls_info->front().y));
-		walls_info->pop();
+	for(int i=0;i<4 && (!walls_info.empty());i++) {
+		base_write(46+i*2,1,belongcell(walls_info.front()->x));
+		base_write(47+i*2,1,belongcell(walls_info.front()->y));
+		walls_info.pop();
 	}
 }
 void Massage_Node:: update_all(shared_ptr<const THUAI4::Character> myinfo
-,vector<shared_ptr<const THUAI4::Character>> *enemies,
-queue<const THUAI4::Wall> *walls_info) {
+,vector<shared_ptr<const THUAI4::Character>> *enemies) {
 	update_myinfo(myinfo);
 	update_enemies(enemies, myinfo);
 	update_time();
-	update_walls(walls_info);
+	update_walls();
 }
 void Massage_Node:: sendMassage(GameApi *api) {
 	for(int i=0;i<4;i++)
@@ -214,8 +215,8 @@ bool Massage_Node:: getMassage(GameApi *api) {
 }
 
 inline bool cell_visible(int x,int y,shared_ptr<const THUAI4::Character> myinfo) {
-	int divx = max(abs(myinfo->x-(x*1000)),abs(myinfo->x-(x*1000+999)));
-	int divy = max(abs(myinfo->y-(y*1000)),abs(myinfo->y-(x*1000+999)));
+	int divx = max(abs(((int)myinfo->x)-(x*1000)),abs(((int)myinfo->x)-(x*1000+999)));
+	int divy = max(abs(((int)myinfo->y)-(y*1000)),abs(((int)myinfo->y)-(x*1000+999)));
 	return (divx*divx)+(divy*divy)>5000*5000;
 }
 
@@ -223,7 +224,7 @@ struct enemy_node {
 	shared_ptr<const THUAI4::Character> data;
 	double val;
 	enemy_node() {}
-	enemy_node(shared_ptr<const THUAI4::Character> __data, int __val): data(__data), val(__val) {}
+	enemy_node(shared_ptr<const THUAI4::Character> __data, double __val): data(__data), val(__val) {}
 	bool operator < (const enemy_node &u) const {
 		return val < u.val;
 	}
@@ -284,7 +285,7 @@ void getdist(pair<int,int> cur, bool first_run = true) {
 			if(knownmap[cur.first+i][cur.second+j] != 32 &&
 			dist[cur.first+i][cur.second+j] > dist[cur.first][cur.second] &&
 			knowntime[cur.first+i][cur.second+j] == knowntime[cur.first][cur.second])
-				dist[cur.first][cur.second] = dist[cur.first][cur.second]+1000.00*sqrt(i*i+j*j),
+				dist[cur.first][cur.second] = dist[cur.first][cur.second]+1.0,
 				getdist(pair<int,int>(cur.first+i, cur.second+j), false);
 }
 void getdist_without_restriction(pair<int,int> cur, bool first_run = true) {
@@ -295,13 +296,13 @@ void getdist_without_restriction(pair<int,int> cur, bool first_run = true) {
 		for(int j=-1+abs(i);abs(j)+abs(i)<=1;j++)
 			if(knownmap[cur.first+i][cur.second+j] != 32 && knownmap[cur.first+i][cur.second+j] != -1 && 
 			dist_without_restriction[cur.first+i][cur.second+j] > dist_without_restriction[cur.first][cur.second])
-				dist_without_restriction[cur.first][cur.second] = dist_without_restriction[cur.first][cur.second]+1000.00*sqrt(i*i+j*j),
+				dist_without_restriction[cur.first][cur.second] = dist_without_restriction[cur.first][cur.second]+1.0,
 				getdist(pair<int,int>(cur.first+i, cur.second+j), false);
 }
 double supplement(shared_ptr<const THUAI4::Character> myinfo) {
 	int bullet_potential = myinfo->maxBulletNum - myinfo->bulletNum;
 	getdist_without_restriction(pair<int,int> (myinfo->x, myinfo->y));
-	int mn;
+	double mn=20000000.00;
 	for(int i=0;i<50;i++)
 		for(int j=0;j<50;j++)
 			if(knownmap[i][j] == myinfo->teamID && mn>dist_without_restriction[i][j])
@@ -334,8 +335,6 @@ void AI::play(GameApi& g) { //躲子弹&游走&报告目标
 	vector<shared_ptr<const THUAI4::Character>> characters = g.GameApi::GetCharacters();
 	vector<shared_ptr<const THUAI4::Wall>> walls = g.GameApi::GetWalls();
 	vector<shared_ptr<const THUAI4::Bullet>> bullets = g.GameApi::GetBullets();
-
-	static queue<const THUAI4::Wall> walls_info;
 	
 	static bool firstrun;
 	
@@ -354,7 +353,7 @@ void AI::play(GameApi& g) { //躲子弹&游走&报告目标
 	for(iw = walls.begin(); iw!=walls.end(); iw++) {
 		if(knownmap[belongcell((*iw)->x)][belongcell((*iw)->y)] != 32) {
 			knownmap[belongcell((*iw)->x)][belongcell((*iw)->y)] = 32;
-			walls_info.push(*(*iw));
+			walls_info.push(*iw);
 		}
 	}
 	for(int i=0, tttt = getTime();i<50;i++)
@@ -366,7 +365,7 @@ void AI::play(GameApi& g) { //躲子弹&游走&报告目标
 			}
 	
 	Massage_Node massages;
-	massages.update_all(myinfo,&characters,&walls_info);
+	massages.update_all(myinfo,&characters);
 	massages.sendMassage(&g);
 
 	vector<pair<int,int>> new_walls;
@@ -433,7 +432,7 @@ void AI::play(GameApi& g) { //躲子弹&游走&报告目标
 		g.MovePlayer(50,findroute(sorted[cnt_sorted].data->x, sorted[cnt_sorted].data->y,myinfo->x,myinfo->y, dist[sorted[cnt_sorted].data->x][sorted[cnt_sorted].data->y])+(rand()%200-100)*0.000628);
 	}
 	else { //游走 
-		int mn, mnx,mny;
+		int mn=21474836470000ll, mnx,mny;
 		for(int i=0;i<50;i++)
 			for(int j=0;j<50;j++)
 				if(knownmap[i][j] == myinfo->teamID && mn>dist_without_restriction[i][j])
