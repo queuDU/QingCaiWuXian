@@ -8,6 +8,7 @@ extern const bool asynchronous = false;
 #include <iostream>
 #include <math.h>
 #include <string>
+#include <chrono>
 /* 请于 VS2019 项目属性中开启 C++17 标准：/std:c++17 */
 
 extern const THUAI4::JobType playerJob = THUAI4::JobType::Job3; //选手职业，选手 !!必须!! 定义此变量来选择职业
@@ -19,8 +20,8 @@ namespace
 }
 #define int long long
 #define PI 3.1415926
-#define start_time  1618993950538ll;
-#define degree PI/120;
+#define start_time  1618993950538ll
+#define degree PI/120
 GameApi *temp;
 
 static int isWalls[50][50];
@@ -29,9 +30,9 @@ int Minimum(int a,int b,int c, int d);
 void attack();
 void go(int a);
 void run(double a[80][4],int b);
-void pick();
+int pick();
 void hide(double a[4][3]);
-void add();
+void addWalls();
 void message();
 void getMes();
 inline int getTime();
@@ -56,7 +57,7 @@ void AI::play(GameApi &g)
 	{
 		if(ve[i]->teamID!=self->teamID)
 		{
-			P[j][0]=ve[i]->jobType; P[j][1]=atan2((ve[i]->y-self->y),(ve[i]->x-self->x));
+			P[j][0]=(double)((unsigned char)(ve[i]->jobType)); P[j][1]=atan2((ve[i]->y-self->y),(ve[i]->x-self->x));
 			P[j][2]=sqrt(pow((ve[i]->y-self->y),2)+pow((ve[i]->x-self->x),2));
 			E++;
 		}
@@ -77,12 +78,12 @@ void AI::play(GameApi &g)
 	}
 	getMes();
 	attack();
-	if(self->hp==0&&self->propType==6)
+	if(self->hp==0&&(int)((unsigned char)(self->propType))==6)
 	{
 		g.Use();
 	}
 	message();
-	add(walls);
+	addWalls();
 	if(E>0)
 	{
 		hide(P);
@@ -93,7 +94,7 @@ void AI::play(GameApi &g)
 	}
 	if(det==1)
 	{
-		run(B[80][4],b);
+		run(B,b);
 	}
 }
 void attack()
@@ -101,41 +102,41 @@ void attack()
 	auto self = temp->GetSelfInfo();
 	if(temp->GetCellColor(self->x, self->y-3000)!=temp->GetSelfTeamColor())
 	{
-		temp->Attack(asin(-1));
+		temp->Attack(100,asin(-1));
 	}
 	if(temp->GetCellColor(self->x, self->y+3000)!=temp->GetSelfTeamColor())
 	{
-		temp->Attack(asin(1));
+		temp->Attack(100,asin(1));
 	}
 	if(temp->GetCellColor(self->x-3000, self->y)!=temp->GetSelfTeamColor())
 	{
-		temp->Attack(acos(1));
+		temp->Attack(100,acos(1));
 	}
 	if(temp->GetCellColor(self->x+3000, self->y)!=temp->GetSelfTeamColor())
 	{
-		temp->Attack(acos(-1));
+		temp->Attack(100,acos(-1));
 	}
 	if(temp->GetCellColor(self->x+4000, self->y+4000)!=temp->GetSelfTeamColor())
 	{
-		temp->Attack(atan(1));
+		temp->Attack(100,atan(1));
 	}
 	if(temp->GetCellColor(self->x-4000, self->y+4000)!=temp->GetSelfTeamColor())
 	{
-		temp->Attack(atan(-1)+PI);
+		temp->Attack(100,atan(-1)+PI);
 	}
 	if(temp->GetCellColor(self->x-4000, self->y-4000)!=temp->GetSelfTeamColor())
 	{
-		temp->Attack(atan(1)+PI);
+		temp->Attack(100,atan(1)+PI);
 	}
 	if(temp->GetCellColor(self->x+4000, self->y-4000)!=temp->GetSelfTeamColor())
 	{
-		temp->Attack(atan(-1));
+		temp->Attack(100,atan(-1));
 	}
 }
 void run (double a[80][4],int b)
 {
 	int lu=0, ru=0,ld=0,rd=0, f=0,ba=0,bu=0,bd=0;double r,r2; //令下向為標準
-	std::vector <int> vw = temp->GetWalls();auto self = temp->GetSelfInfo();
+	std::vector <std::shared_ptr<const THUAI4::Wall>> vw = temp->GetWalls();auto self = temp->GetSelfInfo();
 	for(int i=0;i<b;i++)
 	{
 		r=atan2(a[i][2]-self->y,a[i][1]-self->x);
@@ -147,13 +148,13 @@ void run (double a[80][4],int b)
 		{
 			bu++;
 		}
-	}
+	} //150
 	if(b!=0)
 	{
 		for(int i=0;i<b;i++)
 		{
-			r2=sqrt(pow((a[i][1]+a[i][0]*cos(a[i][3])*0.05)-self->x,2)+pow((a[i][2]+a[i][0]*sin(a[i][3])*0.05)-self->y));
-			if(r2==(self->moveSpee)*0.05)
+			r2=sqrt(pow((a[i][1]+a[i][0]*cos(a[i][3])*0.05)-self->x,2)+pow((a[i][2]+a[i][0]*sin(a[i][3])*0.05)-self->y,2));
+			if(r2==(self->moveSpeed)*0.05)
 			{
 				go(45);
 			}
@@ -167,14 +168,14 @@ void run (double a[80][4],int b)
 void go(int a)
 {
 	int lu=0, ru=0,ld=0,rd=0, f=0,ba=0,bu=0,bd=0;double r,r2; //令下向為標準
-	std::vector <int> vw = temp->GetWalls();auto self = temp->GetSelfInfo();
+	std::vector <std::shared_ptr<const THUAI4::Wall>> vw = temp->GetWalls();auto self = temp->GetSelfInfo();
 	for(int i=0;i<(int)vw.size();i++)
 	{
 		if((vw[i]->x)-(self->x)==(vw[i]->y)-(self->y))
 		{
 			rd++;
 		}
-		else if((self->x)-(vw[i]->x))==(vw[i]->y)-(self->y))
+		else if(((self->x)-(vw[i]->x))==((vw[i]->y)-(self->y)))
 		{
 			ru++;
 		}
@@ -197,7 +198,7 @@ void go(int a)
 	}
 	if(f>0)
 	{
-		if(ru>0&&lu>0)
+		if(ru>0&&lu>0) //200
 		{
 			temp->MovePlayer(a,acos(-1));
 		}
@@ -232,7 +233,7 @@ void go(int a)
 }
 int pick()
 {
-	int M=0; std::vector <int> vp = temp->GetProps();auto self = temp->GetSelfInfo();
+	int Mo=0; std::vector <std::shared_ptr<const THUAI4::Prop>> vp = temp->GetProps();auto self = temp->GetSelfInfo();
 	for(int i=0;i<(int)vp.size();i++)
 	{
 		if((int)((unsigned char)vp[i]->propType) == 4)
@@ -240,15 +241,15 @@ int pick()
 			if((vp[i]->x==self->x)&&(vp[i]->y==self->y))
 			{
 				temp->Throw(1000, acos(1));
-				temp->Pick(4);
+				temp->Pick(vp[i]->propType);
 				if(self->hp<2500)
 				{
 					temp->Use();					
 				}
-				M=1;
+				Mo=1;
 			}else
-			{
-				temp->MovePlayer(50,atan2((vp[i]->x)-(self->x),(vp[i]->y)-(self->y));				
+			{ //250
+				temp->MovePlayer(50,atan2((double)((vp[i]->y)-(self->y)),(double)((vp[i]->x)-(self->x))));				
 			}
 				break;
 		}
@@ -257,12 +258,12 @@ int pick()
 			if((vp[i]->x==self->x)&&(vp[i]->y==self->y))
 			{
 				temp->Throw(1000, acos(1));
-				temp->Pick(1);
+				temp->Pick(vp[i]->propType);
 				temp->Use();
-				M=1;
+				Mo=1;
 			}else
 			{
-				temp->MovePlayer(50,atan2((vp[i]->x)-(self->x),(vp[i]->y)-(self->y));
+				temp->MovePlayer(50,atan2((vp[i]->x)-(self->x),(vp[i]->y)-(self->y)));
 			}
 			break;
 		}
@@ -271,12 +272,12 @@ int pick()
 			if((vp[i]->x==self->x)&&(vp[i]->y==self->y))
 			{
 				temp->Throw(1000, acos(1));
-				temp->Pick(5);
+				temp->Pick(vp[i]->propType);
 				temp->Use();
-				M=1;
+				Mo=1;
 			}else
 			{
-				temp->MovePlayer(50,atan2((vp[i]->x)-(self->x),(vp[i]->y)-(self->y));
+				temp->MovePlayer(50,atan2((vp[i]->x)-(self->x),(vp[i]->y)-(self->y)));
 			}
 			break;
 		}
@@ -285,11 +286,11 @@ int pick()
 			if((vp[i]->x==self->x)&&(vp[i]->y==self->y))
 			{
 				temp->Throw(1000,acos(1));
-				temp->Pick(6);
-				M=1;
+				temp->Pick(vp[i]->propType);
+				Mo=1;
 			}else
 			{
-				temp->MovePlayer(50,atan2((vp[i]->x)-(self->x),(vp[i]->y)-(self->y));
+				temp->MovePlayer(50,atan2((vp[i]->x)-(self->x),(vp[i]->y)-(self->y)));
 			}
 			break;
 		}
@@ -297,13 +298,13 @@ int pick()
 		{
 			if((vp[i]->x==self->x)&&(vp[i]->y==self->y))
 			{
-				temp->Throw(1000, acos(1));
-				temp->Pick(3);
+				temp->Throw(1000, acos(1)); //300
+				temp->Pick(vp[i]->propType);
 				temp->Use();
-				M=1;
+				Mo=1;
 			}else
 			{
-				temp->MovePlayer(50,atan2((vp[i]->x)-(self->x),(vp[i]->y)-(self->y));
+				temp->MovePlayer(50,atan2((vp[i]->x)-(self->x),(vp[i]->y)-(self->y)));
 			}
 			break;
 		}
@@ -311,14 +312,14 @@ int pick()
 		{
 			temp->Pick(vp[i]->propType);
 			temp->Use();
-			M=1;
+			Mo=1;
 		}
 		else 
 		{
-			M=1;
+			Mo=1;
 		}
 	}
-	reutrn M;
+	return Mo;
 }
 void hide(double a[4][3])
 {
@@ -342,12 +343,12 @@ void hide(double a[4][3])
 			n++;
 		}
 	}
-	if(n=1)
+	if(n==1)
 	{
 		if(a[1][0]!=4||a[1][0]!=5)
 		{
-			temp->Attack(a[1][1]);
-			temp->MovePlayer(50,a[1][1]+PI);
+			temp->Attack(100,a[1][1]);
+			temp->MovePlayer(50,a[1][1]+PI);//350
 		}
 		else
 		{
@@ -362,14 +363,15 @@ void hide(double a[4][3])
 						ri=i;
 					}
 				}
-				if(R[i]<=300)
+				if(r1<=300)
 				{
-					ms=R[i]/self->moveSpeed;
-					an=atan2(BP[i][1]-self->y,BP[i][0]-self->x);
+					ms=r1/self->moveSpeed;
+					an=atan2((double)(BP[ri][1]-self->y),(double)(BP[ri][0]-self->x));
 					temp->MovePlayer(ms,an);
 				}
 				else
 				{
+					an = atan2((double)(BP[ri][1] - self->y), (double)(BP[ri][0] - self->x));
 					temp->MovePlayer(50,an);
 				}
 			}
@@ -395,10 +397,9 @@ void hide(double a[4][3])
 				{
 					for(int j=0;j<1000;j++)
 					{
-					
 						if(isWalls[i][j]==1&&(((i*1000)+500)>self->x&&((j*1000)+500)>self->y))
 						{
-							e1++;
+							e1++;//400
 						}
 						if(isWalls[i][j]==1&&(((i*1000)+500)>self->x&&((j*1000)+500)<self->y))
 						{
@@ -414,25 +415,25 @@ void hide(double a[4][3])
 						}
 					}
 				}
-				m=Miniimun(e1,e2,e3,e4)
+				m = Minimum(e1, e2, e3, e4);
 				if(m==e1)
 				{
-					temp->Attack(a[1][1]);
+					temp->Attack(100,a[1][1]);
 					temp->MovePlayer(50,atan(1));
 				}
 				else if(m==e2)
 				{
-					temp->Attack(a[1][1]);
+					temp->Attack(100,a[1][1]);
 					temp->MovePlayer(50,atan(-1));
 				}
 				else if(m==e3)
 				{
-					temp->Attack(a[1][1]);
+					temp->Attack(100,a[1][1]);
 					temp->MovePlayer(50,atan(1)-PI);
 				}
 				else
 				{
-					temp->Attack(a[1][1]);
+					temp->Attack(100,a[1][1]);
 					temp->MovePlayer(50,atan(-1)+PI);
 				}
 			}
@@ -448,17 +449,18 @@ void hide(double a[4][3])
 				if(R[i]<r1)
 				{
 					r1=R[i];
-					ri=i;
+					ri=i;//450
 				}
 			}
-			if(R[i]<=300)
+			if(r1<=300)
 			{
-				ms=R[i]/self->moveSpeed;
-				an=atan2(BP[i][1]-self->y,BP[i][0]-self->x);
+				ms=r1/self->moveSpeed;
+				an=atan2((double)(BP[ri][1]-self->y),(double)(BP[ri][0]-self->x));
 				temp->MovePlayer(ms,an);
 			}
 			else
 			{
+				an = atan2((double)(BP[ri][1] - self->y), (double)(BP[ri][0] - self->x));
 				temp->MovePlayer(50,an);
 			}
 		}
@@ -498,7 +500,7 @@ void hide(double a[4][3])
 					if(isWalls[i][j]==1&&(((i*1000)+500)<self->x&&((j*1000)+500)<self->y))
 					{
 						e3++;
-					}
+					}//500
 					if(isWalls[i][j]==1&&(((i*1000)+500)<self->x&&((j*1000)+500)>self->y))
 					{
 						e4++;
@@ -508,22 +510,22 @@ void hide(double a[4][3])
 			m=Minimum(e1,e2,e3,e4);
 			if(m==e1)
 			{
-				temp->Attack(a[1][1]);
+				temp->Attack(100,a[1][1]);
 				temp->MovePlayer(50,atan(1));
 			}
 			else if(m==e2)
 			{
-				temp->Attack(a[1][1]);
+				temp->Attack(100,a[1][1]);
 				temp->MovePlayer(50,atan(-1));
 			}
 			else if(m==e3)
 			{
-				temp->Attack(a[1][1]);
+				temp->Attack(100,a[1][1]);
 				temp->MovePlayer(50,atan(1)-PI);
 			}
 			else
 			{
-				temp->Attack(a[1][1]);
+				temp->Attack(100,a[1][1]);
 				temp->MovePlayer(50,atan(-1)+PI);
 			}
 		}
@@ -545,24 +547,29 @@ int Minimum(int a,int b,int c,int d)
 	{
 		m=d;
 	}
+	return m;
 }
-void add()
+void addWalls()
 {
-	int n=0;
+	int n=0;//550
 	for(int i=0;i<50;i++)
 	{
-		for(int i=0;i<50;i++)
+		for(int j=0;j<50;j++)
 		{
-			if(a[i][j]==1&&n<4)
+			if (walls[i][j] == 1 && n < 4)
 			{
-				isWalls[i][j]=a[i][j];
-				walls[i][j]=0;
+				isWalls[i][j] = walls[i][j];
+				walls[i][j] = 0;
 				n++;
 			}
 			else
 			{
 				break;
 			}
+		}
+		if (n >= 4)
+		{
+			break;
 		}
 	}
 }
@@ -573,8 +580,8 @@ inline int getTime() {
 void message()
 {
 	auto self = temp->GetSelfInfo();std::vector <std::shared_ptr<const THUAI4::Character>> ve = temp->GetCharacters(); 
-	char sn; int a=0,b=0,d, t;char s[2][3],el[4][4],ej[4],ed[4][2],ev[4][2],wl[4][2],ej[4],ti[3],c='0'; 
-	string ms, E="MAYDAY";
+	char sn; int a = 0, b = 0, d, t;char s[2][3], el[4][4], ej[4], ed[4][2], ev[4][2], wl[4][2], ti[3], c = '0';
+	std::string ms, E="MAYDAY";
 	s[0][0]=(int)((self->x)/65536);
 	s[0][1]=(int)(((self->x)%65536)/256);
 	s[0][2]=(int)((self->x)%256);
@@ -585,16 +592,16 @@ void message()
 	{
 		if(ve[i]->teamID!=self->teamID)
 		{
-			ej[a]=(int)((unsigned)ve->JobType);
-			el[a][1]=(int)[(ve[i]->x)-(self->x)%256]-128;
-			el[a][0]=(int)[(ve[i]->x)-(self->x)/256]-128;
-			el[a][2]=(int)[(ve[i]->y)-(self->y)/256]-128;
-			el[a][3]=(int)[(ve[i]->y)-(self->y)%256]-128;
+			ej[a]=(int)((unsigned)ve[i]->jobType);
+			el[a][1]=(int)((ve[i]->x)-(self->x)%256)-128;
+			el[a][0]=(int)((ve[i]->x)-(self->x)/256)-128;
+			el[a][2]=(int)((ve[i]->y)-(self->y)/256)-128;
+			el[a][3]=(int)((ve[i]->y)-(self->y)%256)-128;
 			ed[a][0]=(int)(ve[i]->facingDirection)/degree;
-			ed[a][1]=(int)((ve[i]->facingDirection)%degree)/256-128;
-			ev[a][0]=(int)(ve[i]->moveSpeed)/256-128;
-			ev[a][1]=(int)(ve[i]->moveSpeed)%256-128;
-			a++;
+			ed[a][1]=(int)((ve[i]->facingDirection)- (int)(ve[i]->facingDirection) / degree)/256-128;
+			ev[a][0] = (int)(ve[i]->moveSpeed)/256 - 128;
+			ev[a][1]=(int)(ve[i]->moveSpeed)%256-128;//600
+			a++; 
 		}
 	}
 	for(int i=0;i<1000;i++)
@@ -616,7 +623,7 @@ void message()
 			break;
 		}
 	}
-	for(int i=a;i<4;++)
+	for(int i=a;i<4;i++)
 	{
 		ej[a]=0;
 		for(int j=0;j<4;j++)
@@ -693,12 +700,12 @@ void getMes()
 {
 	auto self = temp->GetSelfInfo();
 	int a,b,c,d,f,g; double e;
-	for(int i=0;i<4;i++)
+	for(int i=0;i<4;i++)//700
 	{
-		string msg;
-		if(self->TryGetMessage(msg))
+		std::string msg;
+		if(temp->TryGetMessage(msg))
 		{
-			if(msg[0]==((int)self->JobType))
+			if(msg[0]==((int)self->jobType))
 			{
 				continue;
 			}
@@ -708,8 +715,8 @@ void getMes()
 				b=msg[4]*65536+msg[5]*256+msg[6];
 				c=a-self->x;d=b-self->y;
 				e=atan2(d,c);
-				temp->Attack(e);
-				for(int j=47, j<55;j+2)
+				temp->Attack(100,e);
+				for(int j=47; j<55;j+2)
 				{
 					f=(int)msg[j];g=(int)msg[j+1];
 					if(isWalls[f][g]!=1)
