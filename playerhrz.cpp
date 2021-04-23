@@ -326,16 +326,6 @@ void hide(double a[4][3])
 	std::vector <std::shared_ptr<const THUAI4::BirthPoint>> vbp=temp->GetBirthPoints();auto self = temp->GetSelfInfo();
 	int BP[4][2];double R[4];
 	int e1=0,e2=0,e3=0,e4=0, n=0, m, bp=0,r1,ri,ms,an;
-	for(int i=0;i<(int)vbp.size();i++)
-	{
-		if(vbp[i]->teamID==self->teamID)
-		{
-			BP[bp][0]=vbp[i]->x;
-			BP[bp][1]=vbp[i]->y;
-			R[bp]=sqrt(pow(BP[bp][0]-self->x,2)+pow(BP[bp][1]-self->y,2));
-			bp++;
-		}
-	}
 	for(int i=0;i<4;i++)
 	{
 		if(a[i][0]>=0&&a[i][0]<=6)
@@ -345,153 +335,36 @@ void hide(double a[4][3])
 	}
 	if(n==1)
 	{
-		if(a[1][0]!=4||a[1][0]!=5)
+		if(a[1][0]!=4&&a[1][0]!=5)
 		{
 			temp->Attack(100,a[1][1]);
 			temp->MovePlayer(50,a[1][1]+PI);//350
 		}
 		else
 		{
-			if(bp>0)
+			if(a[1][1]>=PI/2)
 			{
-				r1=R[0];
-				for(int i=1;i<bp;i++)
-				{
-					if(R[i]<r1)
-					{
-						r1=R[i];
-						ri=i;
-					}
-				}
-				if(r1<=300)
-				{
-					ms=r1/self->moveSpeed;
-					an=atan2((double)(BP[ri][1]-self->y),(double)(BP[ri][0]-self->x));
-					temp->MovePlayer(ms,an);
-				}
-				else
-				{
-					an = atan2((double)(BP[ri][1] - self->y), (double)(BP[ri][0] - self->x));
-					temp->MovePlayer(50,an);
-				}
+				e4+10000;
+			}
+			else if(a[1][1]<PI/2&&a[1][1]>=0)
+			{
+				e1+10000;
+			}
+			else if(a[1][1]<-PI/2)
+			{
+				e3+10000;
 			}
 			else
 			{
-				if(a[1][1]>=PI/2)
-				{
-					e4+10000;
-				}
-				else if(a[1][1]<PI/2&&a[1][1]>=0)
-				{
-					e1+10000;
-				}
-				else if(a[1][1]<-PI/2)
-				{
-					e3+10000;
-				}
-				else
-				{
-					e2+10000;
-				}
-				for(int i=0;i<1000;i++)
-				{
-					for(int j=0;j<1000;j++)
-					{
-						if(isWalls[i][j]==1&&(((i*1000)+500)>self->x&&((j*1000)+500)>self->y))
-						{
-							e1++;//400
-						}
-						if(isWalls[i][j]==1&&(((i*1000)+500)>self->x&&((j*1000)+500)<self->y))
-						{
-							e2++;
-						}
-						if(isWalls[i][j]==1&&(((i*1000)+500)<self->x&&((j*1000)+500)<self->y))
-						{
-							e3++;
-						}
-						if(isWalls[i][j]==1&&(((i*1000)+500)<self->x&&((j*1000)+500)>self->y))
-						{
-							e4++;
-						}
-					}
-				}
-				m = Minimum(e1, e2, e3, e4);
-				if(m==e1)
-				{
-					temp->Attack(100,a[1][1]);
-					temp->MovePlayer(50,atan(1));
-				}
-				else if(m==e2)
-				{
-					temp->Attack(100,a[1][1]);
-					temp->MovePlayer(50,atan(-1));
-				}
-				else if(m==e3)
-				{
-					temp->Attack(100,a[1][1]);
-					temp->MovePlayer(50,atan(1)-PI);
-				}
-				else
-				{
-					temp->Attack(100,a[1][1]);
-					temp->MovePlayer(50,atan(-1)+PI);
-				}
-			}
-		}
-	}
-	else
-	{
-		if(bp>0)
-		{
-			r1=R[0];
-			for(int i=1;i<bp;i++)
-			{
-				if(R[i]<r1)
-				{
-					r1=R[i];
-					ri=i;//450
-				}
-			}
-			if(r1<=300)
-			{
-				ms=r1/self->moveSpeed;
-				an=atan2((double)(BP[ri][1]-self->y),(double)(BP[ri][0]-self->x));
-				temp->MovePlayer(ms,an);
-			}
-			else
-			{
-				an = atan2((double)(BP[ri][1] - self->y), (double)(BP[ri][0] - self->x));
-				temp->MovePlayer(50,an);
-			}
-		}
-		else
-		{
-			for(int i=0;i<n;i++)
-			{
-				if(a[i][1]>=PI/2)
-				{
-					e4+10000;
-				}
-				else if(a[i][1]<PI/2&&a[i][1]>=0)
-				{
-					e1+10000;
-				}
-				else if(a[i][1]<-PI/2)
-				{
-					e3+10000;
-				}
-				else
-				{
-					e2+10000;
-				}
+				e2+10000;
 			}
 			for(int i=0;i<1000;i++)
 			{
 				for(int j=0;j<1000;j++)
-				{		
+				{
 					if(isWalls[i][j]==1&&(((i*1000)+500)>self->x&&((j*1000)+500)>self->y))
 					{
-						e1++;
+						e1++;//400
 					}
 					if(isWalls[i][j]==1&&(((i*1000)+500)>self->x&&((j*1000)+500)<self->y))
 					{
@@ -500,14 +373,14 @@ void hide(double a[4][3])
 					if(isWalls[i][j]==1&&(((i*1000)+500)<self->x&&((j*1000)+500)<self->y))
 					{
 						e3++;
-					}//500
+					}
 					if(isWalls[i][j]==1&&(((i*1000)+500)<self->x&&((j*1000)+500)>self->y))
 					{
 						e4++;
 					}
 				}
 			}
-			m=Minimum(e1,e2,e3,e4);
+			m = Minimum(e1, e2, e3, e4);
 			if(m==e1)
 			{
 				temp->Attack(100,a[1][1]);
@@ -528,6 +401,71 @@ void hide(double a[4][3])
 				temp->Attack(100,a[1][1]);
 				temp->MovePlayer(50,atan(-1)+PI);
 			}
+		}
+	}
+	else
+	{
+		for(int i=0;i<n;i++)
+		{
+			if(a[i][1]>=PI/2)
+			{
+				e4+10000;
+			}
+			else if(a[i][1]<PI/2&&a[i][1]>=0)
+			{
+				e1+10000;
+			}
+			else if(a[i][1]<-PI/2)
+			{
+				e3+10000;
+			}
+			else
+			{
+				e2+10000;
+			}
+		}
+		for(int i=0;i<1000;i++)
+		{
+			for(int j=0;j<1000;j++)
+			{		
+				if(isWalls[i][j]==1&&(((i*1000)+500)>self->x&&((j*1000)+500)>self->y))
+				{
+					e1++;
+				}
+				if(isWalls[i][j]==1&&(((i*1000)+500)>self->x&&((j*1000)+500)<self->y))
+				{
+					e2++;
+				}
+				if(isWalls[i][j]==1&&(((i*1000)+500)<self->x&&((j*1000)+500)<self->y))
+				{
+					e3++;
+				}//500
+				if(isWalls[i][j]==1&&(((i*1000)+500)<self->x&&((j*1000)+500)>self->y))
+				{
+					e4++;
+				}
+			}
+		}
+		m=Minimum(e1,e2,e3,e4);
+		if(m==e1)
+		{
+			temp->Attack(100,a[1][1]);
+			temp->MovePlayer(50,atan(1));
+		}
+		else if(m==e2)
+		{
+			temp->Attack(100,a[1][1]);
+			temp->MovePlayer(50,atan(-1));
+		}
+		else if(m==e3)
+		{
+			temp->Attack(100,a[1][1]);
+			temp->MovePlayer(50,atan(1)-PI);
+		}
+		else
+		{
+			temp->Attack(100,a[1][1]);
+			temp->MovePlayer(50,atan(-1)+PI);
 		}
 	}
 }
